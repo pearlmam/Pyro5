@@ -379,6 +379,11 @@ These errors are caused by Numpy datatypes not being recognised by Pyro's serial
    would require a mapping to the appropriate Java or .NET type)
 
 
+.. sidebar:: msgpack + Numpy
+
+    *msgpack-numpy* (https://pypi.org/project/msgpack-numpy/) 'provides encoding and decoding routines that enable the serialization and deserialization of numerical and array data types provided by numpy using the highly efficient msgpack format'.
+    Pyro5 supports msgpack as serializer, so using that together with this library may solve the Numpy data serialization issues.
+
 If you still want to use numpy with Pyro, you'll have to convert the data to standard Python datatypes before using them in Pyro.
 So instead of just ``na = numpy.array(...); return na;``, use this instead:  ``return na.tolist()``.
 Or perhaps even ``return array.array('i', na)`` (serpent understands ``array.array`` just fine).
