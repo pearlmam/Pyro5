@@ -9,6 +9,8 @@ Pyro5
 .. image:: https://anaconda.org/conda-forge/pyro5/badges/version.svg
     :target: https://anaconda.org/conda-forge/pyro5
 
+**Project status: super low maintenance mode. Not really worked on anymore, only reported bugs will be looked at.**
+
 
 Info
 ----

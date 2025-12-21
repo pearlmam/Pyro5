@@ -4,7 +4,10 @@ Change Log
 
 **Pyro 5.16**
 
-- removed Python 3.8 from the support list (it is EOL). Now supported on Python 3.9 or newer.
+- project going into super low maintenance mode, I don't plan on working on it any longer unless nasty bugs are reported.
+- properties can now be a streaming generator too
+- loopCondition is relayed from start_ns_loop() to its daemon
+- removed Python 3.8 and 3.9 from the support list (they are EOL). Now supported on Python 3.10 or newer.
 - docs: clarify @expose on a class not automatically exposing base class(es).
 
 
