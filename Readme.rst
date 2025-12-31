@@ -1,5 +1,14 @@
+Pyro5 with Pickle
+=================
+
+**This is a fork of the Pyro5 that includes pickle and dill serialization. Use with caution, pickle and dill are insecure!**
+
+This fork was developed for use with D-Manage package.
+
 Pyro5
 =====
+
+
 
 *Remote objects communication library*
 
