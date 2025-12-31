@@ -16,6 +16,9 @@ import inspect
 import marshal
 import json
 import serpent
+import pickle
+import dill
+import copyreg
 import contextlib
 try:
     import msgpack
@@ -24,6 +27,7 @@ except ImportError:
 from . import errors, config
 
 __all__ = ["SerializerBase", "SerpentSerializer", "JsonSerializer", "MarshalSerializer", "MsgpackSerializer",
+           "PickleSerializer", "DillSerializer",
            "serializers", "serializers_by_id"]
 
 log = logging.getLogger("Pyro5.serializers")
@@ -477,6 +481,82 @@ class MsgpackSerializer(SerializerBase):
         if object_type is type or not inspect.isclass(object_type):
             raise ValueError("refusing to register replacement for a non-type or the type 'type' itself")
         cls.__type_replacements[object_type] = replacement_function
+       
+class PickleSerializer(SerializerBase):
+    """
+    A (de)serializer that wraps the Pickle serialization protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
+    serializer_id = 5  # never change this
+
+    # def _convertToBytes(self, data):
+    #     ret = super()._convertToBytes(data)
+    #     return self.loads(data)
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return pickle.dumps((obj, method, vargs, kwargs))
+
+    def dumps(self, data):
+        return pickle.dumps(data)
+
+    def loadsCall(self, data):
+        data = self._convertToBytes(data)
+        return pickle.loads(data)
+
+    def loads(self, data):
+        data = self._convertToBytes(data)
+        return pickle.loads(data)
+
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        def copyreg_function(obj):
+            return replacement_function(obj).__reduce__()
+
+        if object_type is type or not inspect.isclass(object_type):
+            raise ValueError("refusing to register replacement for a non-type or the type 'type' itself")
+        try:
+            copyreg.pickle(object_type, copyreg_function)
+        except TypeError:
+            pass
+
+class DillSerializer(SerializerBase):
+    """
+    A (de)serializer that wraps the Dill serialization protocol.
+    It can optionally compress the serialized data, and is thread safe.
+    """
+    serializer_id = 6  # never change this
+
+    # def _convertToBytes(self, data):
+    #     ret = super()._convertToBytes(data)
+    #     return self.loads(data)
+
+    def dumpsCall(self, obj, method, vargs, kwargs):
+        return dill.dumps((obj, method, vargs, kwargs))
+
+    def dumps(self, data):
+        return dill.dumps(data)    # add config.DILL_PROTOCOL_VERSION ???
+
+    def loadsCall(self, data):
+        data = self._convertToBytes(data)   # add config.DILL_PROTOCOL_VERSION ???
+        return dill.loads(data)
+
+    def loads(self, data):
+        data = self._convertToBytes(data)
+        return dill.loads(data)
+
+    @classmethod
+    def register_type_replacement(cls, object_type, replacement_function):
+        def copyreg_function(obj):
+            return replacement_function(obj).__reduce__()
+
+        if object_type is type or not inspect.isclass(object_type):
+            raise ValueError("refusing to register replacement for a non-type or the type 'type' itself")
+        try:
+            copyreg.pickle(object_type, copyreg_function)
+        except TypeError:
+            pass
+
+
 
 
 """The various serializers that are supported"""
@@ -488,6 +568,10 @@ serializers = {
 
 if msgpack:
     serializers["msgpack"] = MsgpackSerializer()
+pickle_enable = True
+if pickle_enable:
+    serializers["pickle"] = PickleSerializer()
+    serializers["dill"] = DillSerializer()
 
 
 """The available serializers by their internal id"""
