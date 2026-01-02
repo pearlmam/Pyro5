@@ -55,7 +55,7 @@ class Proxy(object):
         ["__getnewargs__", "__getnewargs_ex__", "__getinitargs__", "_pyroConnection", "_pyroUri",
          "_pyroOneway", "_pyroMethods", "_pyroAttrs", "_pyroTimeout", "_pyroSeq", "_pyroLocalSocket",
          "_pyroRawWireResponse", "_pyroHandshake", "_pyroMaxRetries", "_pyroSerializer",
-         "_Proxy__pyroTimeout", "_Proxy__pyroOwnerThread","_pyroCompProxies","_pyroExposedComps"])
+         "_Proxy__pyroTimeout", "_Proxy__pyroOwnerThread"])
 
     def __init__(self, uri, connected_socket=None):
         if connected_socket:
