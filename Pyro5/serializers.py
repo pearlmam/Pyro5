@@ -488,7 +488,8 @@ class PickleSerializer(SerializerBase):
     It can optionally compress the serialized data, and is thread safe.
     """
     serializer_id = 5  # never change this
-
+    __custom_pickle_loads_registry = {}
+    
     # def _convertToBytes(self, data):
     #     ret = super()._convertToBytes(data)
     #     return self.loads(data)
@@ -500,13 +501,45 @@ class PickleSerializer(SerializerBase):
         return pickle.dumps(data)
 
     def loadsCall(self, data):
-        data = self._convertToBytes(data)
+        data = self._convertToBytes(data) 
         return pickle.loads(data)
 
     def loads(self, data):
         data = self._convertToBytes(data)
-        return pickle.loads(data)
+        data = pickle.loads(data)
+        data = self.loads_hook(data)
+        return data
+    
+    @classmethod
+    def loads_hook(cls,data):
+        """hook for handling unique instances 
+        Developed for creating creating proxy from uri automatically
+        should add checks for nested classes in containers"""
+        clazz = getattr(data,'__class__',False)
+        if clazz:
+            classname = getattr(clazz,'__name__','<unknown>')
+            if classname in cls.__custom_pickle_loads_registry:
+                converter = cls.__custom_pickle_loads_registry[classname]
+                data = converter(data)
+        return data
+    
+    @classmethod
+    def register_pickle_loads_hook(cls, classname, converter):
+        """
+        Registers a custom converter function that creates objects from a dict with the given classname tag in it.
+        The function is called with two parameters: the classname and the dictionary to convert to an instance of the class.
+        """
+        cls.__custom_pickle_loads_registry[classname] = converter
 
+    @classmethod
+    def unregister_pickle_loads_hook(cls, classname):
+        """
+        Removes the converter registered for the given classname. Dicts with that classname tag
+        will be deserialized by the default mechanism again.
+        """
+        if classname in cls.__custom_pickle_loads_registry:
+            del cls.__custom_pickle_loads_registry[classname]
+    
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
         def copyreg_function(obj):
@@ -519,7 +552,7 @@ class PickleSerializer(SerializerBase):
         except TypeError:
             pass
 
-class DillSerializer(SerializerBase):
+class DillSerializer(PickleSerializer):
     """
     A (de)serializer that wraps the Dill serialization protocol.
     It can optionally compress the serialized data, and is thread safe.
@@ -542,7 +575,9 @@ class DillSerializer(SerializerBase):
 
     def loads(self, data):
         data = self._convertToBytes(data)
-        return dill.loads(data)
+        data = dill.loads(data)
+        data = self.loads_hook(data)
+        return data
 
     @classmethod
     def register_type_replacement(cls, object_type, replacement_function):
