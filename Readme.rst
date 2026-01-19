@@ -3,7 +3,11 @@ Pyro5 with Pickle
 
 **This is a fork of the Pyro5 that includes pickle and dill serialization. Use with caution, pickle and dill are insecure!**
 
+`See how easy it is to exploit pickle <https://arjancodes.com/blog/python-pickle-module-security-risks-and-safer-alternatives/>`_.
+
 This fork was developed for use with D-Manage package.
+
+The pickle addition is copied and modified from another forked Pyro5 here: `<https://github.com/gst/Pyro5>`_.
 
 Pyro5
 =====
@@ -17,9 +21,10 @@ Pyro5
 
 .. image:: https://anaconda.org/conda-forge/pyro5/badges/version.svg
     :target: https://anaconda.org/conda-forge/pyro5
-
+    
 **Project status: super low maintenance mode. Not really worked on anymore, only reported bugs will be looked at.**
 
+`See how easy it is to exploit pickle <https://arjancodes.com/blog/python-pickle-module-security-risks-and-safer-alternatives>`_ 
 
 Info
 ----
