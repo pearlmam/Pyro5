@@ -13,7 +13,11 @@ Set the serializer the same way as you would with Pyro5, set::
         Pyro5.api.config.SERIALIZER = 'pickle'
         
 The ``config.SERIALIZER`` option only needs to be set on the client because the server side uses whatever serializer the client uses.
-        
+      
+      
+Security: Local Loopback
+------------------------
+ 
 Pickle and dill default to be used on only on local loopback ip addresses; that way the socket is only accessible to users with local access. This requirement can be disabled by setting ``config.PICKLE_LOCAL=False``; however this is NOT recommended because anyone on the network can easily mess your server and computer. To access the server from another computer, use port forwarding. Start the server using a local loopback address, like the default ``127.0.0.1``, and use an ssh tunnel on the client to access it::
 
        $ ssh -L [LOCAL_PORT]:[REMOTE_HOST]:[REMOTE_PORT] user@server
@@ -29,6 +33,54 @@ This should appear to ssh into the server like normal, but the port is forwarded
         LISTEN 0      128                 [::1]:54321         [::]:*
 
 Create a proxy on the client like you normally would by connecting to ``host=127.0.0.1``, ``port=54321``. 
+
+Security: SSL Certificates (In Development)
+-------------------------------------------
+
+Maybe add an option to check certificates with pickle. The functionality is already there by setting these options:
+
+Server::
+        config.SSL = True
+        config.SSL_REQUIRECLIENTCERT = True   # enable 2-way ssl
+        config.SSL_SERVERCERT = "../certs/server_cert.pem"
+        config.SSL_SERVERKEY = "../certs/server_key.pem"
+        config.SSL_CACERTS = "../certs/client_cert.pem"
+        
+Client::
+        config.SSL = True
+        config.SSL_CLIENTCERT = "../certs/client_cert.pem"
+        config.SSL_CLIENTKEY = "../certs/client_key.pem"
+        config.SSL_CACERTS = "../certs/server_cert.pem"    # to make ssl accept the self-signed server cert
+
+The pickle enable check hook will also go in protocol.py, and check for config.SSL = True and config.SSL_CLIENTCERT=True? 
+
+Then I need easy instructions on how to generate certificates.
+
+Generate key and puplic cert on server and share with server::
+        
+        openssl genrsa -out server_key.pem 4096
+        openssl req -new -x509 -days 3650 -key server_key.pem -out server_cert.pem
+        
+Generate key and puplic cert on client::
+        
+        openssl genrsa -out client_key.pem 4096
+        openssl req -new -x509 -days 3650 -key client_key.pem -out client_cert.pem     
+        
+Push and pull the public client and server certificates from the client::
+        scp client_cert.pem user@remote_host:<path/to/cert/location>
+        scp user@remote_host:<path/to/cert> ./server_cert.pem
+        
+There is also a place I can add a hook for more authentication hooks in Pyro5.server::
+        class SecureDaemon(Daemon):
+            def validateHandshake(self, conn, data):
+                cert = conn.sock.getpeercert()
+                if not cert:
+                    raise errors.CommunicationError("client cert missing")
+                
+                return super().validateHandshake(conn, data)
+            
+        Daemon = SecureDaemon   # this overwrites the Daemon with my secure Daemon. I can add a pickle check here and require certificates here.
+
 
 Pyro5
 =====
