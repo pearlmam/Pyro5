@@ -66,6 +66,7 @@ _magic_number_bytes = _magic_number.to_bytes(2, "big")
 _protocol_version_bytes = PROTOCOL_VERSION.to_bytes(2, "big")
 _empty_correlation_id = b"\0" * 16
 
+pickle_id=[5,6]  # pickle and dill ids from serializers.py
 
 class SendingMessage:
     """Wire protocol message that will be sent."""
@@ -178,7 +179,6 @@ def log_wiredata(logger, text, msg):
     logger.debug("%s: msgtype=%d flags=0x%x ser=%d seq=%d num_annotations=%s corr_id=%s\ndata=%r" %
                  (text, msg.type, msg.flags, msg.serializer_id, msg.seq, num_anns, corr_id, bytes(msg.data)))
 
-
 def recv_stub(connection, accepted_msgtypes=None):
     """
     Receives a pyro message from a given connection.
@@ -190,6 +190,7 @@ def recv_stub(connection, accepted_msgtypes=None):
     ReceivingMessage.validate(header)
     header += connection.recv(_header_size - 6)
     msg = ReceivingMessage(header)
+    check_pickle_allowed(msg,connection)   # Pickle security check
     if accepted_msgtypes and msg.type not in accepted_msgtypes:
         err = "invalid msg type {:d} received (expected: {:s})".format(msg.type, ",".join(str(t) for t in accepted_msgtypes))
         log.error(err)
@@ -199,3 +200,19 @@ def recv_stub(connection, accepted_msgtypes=None):
     payload = connection.recv(msg.annotations_size + msg.data_size)
     msg.add_payload(payload)
     return msg
+
+def check_pickle_allowed(msg,connection):
+    if msg.serializer_id not in pickle_id:
+        return
+    if not config.PICKLE_ENABLE:
+        raise Exception(
+            "Pickle/Dill serializer is NOT enabled. "
+            "Set 'config.PICKLE_ENABLE=True' on both server and client to use pickle."
+        )
+    
+    if config.PICKLE_LOCAL and not connection.allow_pickle:
+        raise Exception(
+            "Socket is public! Pickle/Dill serializer can only be used with local loopbacks. "
+            "Start server on a loopback and tunnel via SSH: "
+            "'ssh -L [LOCAL_PORT]:[REMOTE_HOST]:[REMOTE_PORT] user@server'"
+        )

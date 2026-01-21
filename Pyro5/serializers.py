@@ -17,9 +17,12 @@ import marshal
 import json
 import serpent
 import pickle
-import dill
 import copyreg
 import contextlib
+try:
+    import dill
+except ImportError:
+    dill = None
 try:
     import msgpack
 except ImportError:
@@ -489,11 +492,14 @@ class PickleSerializer(SerializerBase):
     """
     serializer_id = 5  # never change this
     __custom_pickle_loads_registry = {}
+     
+    def isenabled(self):
+        """For use in loads(). This will halt execution if pickle isn't enabled. 
+        This is double check, first check is in protocol.ReceivingMessage
+        """
+        if not config.PICKLE_ENABLE:
+            raise Exception("Last chance security check Exception!!! Pickle is not enabled, set Pyro5.config.PICKLE_ENABLE = True on both server and client to use pickle.")
     
-    # def _convertToBytes(self, data):
-    #     ret = super()._convertToBytes(data)
-    #     return self.loads(data)
-
     def dumpsCall(self, obj, method, vargs, kwargs):
         return pickle.dumps((obj, method, vargs, kwargs))
 
@@ -501,10 +507,12 @@ class PickleSerializer(SerializerBase):
         return pickle.dumps(data)
 
     def loadsCall(self, data):
+        # self.isenabled()
         data = self._convertToBytes(data) 
         return pickle.loads(data)
 
     def loads(self, data):
+        # self.isenabled()
         data = self._convertToBytes(data)
         data = pickle.loads(data)
         data = self.loads_hook(data)
@@ -559,10 +567,6 @@ class DillSerializer(PickleSerializer):
     """
     serializer_id = 6  # never change this
 
-    # def _convertToBytes(self, data):
-    #     ret = super()._convertToBytes(data)
-    #     return self.loads(data)
-
     def dumpsCall(self, obj, method, vargs, kwargs):
         return dill.dumps((obj, method, vargs, kwargs))
 
@@ -570,10 +574,12 @@ class DillSerializer(PickleSerializer):
         return dill.dumps(data)    # add config.DILL_PROTOCOL_VERSION ???
 
     def loadsCall(self, data):
+        # self.isenabled()
         data = self._convertToBytes(data)   # add config.DILL_PROTOCOL_VERSION ???
         return dill.loads(data)
 
     def loads(self, data):
+        # self.isenabled()
         data = self._convertToBytes(data)
         data = dill.loads(data)
         data = self.loads_hook(data)
@@ -591,23 +597,17 @@ class DillSerializer(PickleSerializer):
         except TypeError:
             pass
 
-
-
-
 """The various serializers that are supported"""
 serializers = {
     "serpent": SerpentSerializer(),
     "marshal": MarshalSerializer(),
-    "json": JsonSerializer()
+    "json": JsonSerializer(),
+    "pickle":PickleSerializer()
 }
-
 if msgpack:
     serializers["msgpack"] = MsgpackSerializer()
-pickle_enable = True
-if pickle_enable:
-    serializers["pickle"] = PickleSerializer()
+if dill:
     serializers["dill"] = DillSerializer()
-
 
 """The available serializers by their internal id"""
 serializers_by_id = {ser.serializer_id: ser for ser in serializers.values()}

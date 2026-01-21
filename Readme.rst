@@ -1,18 +1,37 @@
 Pyro5 with Pickle
 =================
 
-**This is a fork of the Pyro5 that includes pickle and dill serialization. Use with caution, pickle and dill are insecure!**
+This is a fork of the Pyro5 that includes pickle and dill serialization. Use with caution, pickle and dill are insecure! `See how easy it is to exploit pickle <https://arjancodes.com/blog/python-pickle-module-security-risks-and-safer-alternatives/>`_. This fork was developed for use with D-Manage package. The pickle addition is copied and modified from another forked Pyro5 here: `<https://github.com/gst/Pyro5>`_.
 
-`See how easy it is to exploit pickle <https://arjancodes.com/blog/python-pickle-module-security-risks-and-safer-alternatives/>`_.
+Pickle and dill are disabled by default and the default functionality is virtually identical to the main branch. To enable pickle and dill, on both the server and client use the following::
 
-This fork was developed for use with D-Manage package.
+        import Pyro5.api
+        Pyro5.api.config.PICKLE_ENABLE=True
 
-The pickle addition is copied and modified from another forked Pyro5 here: `<https://github.com/gst/Pyro5>`_.
+Set the serializer the same way as you would with Pyro5, set:: 
+        
+        Pyro5.api.config.SERIALIZER = 'pickle'
+        
+The ``config.SERIALIZER`` option only needs to be set on the client because the server side uses whatever serializer the client uses.
+        
+Pickle and dill default to be used on only on local loopback ip addresses; that way the socket is only accessible to users with local access. This requirement can be disabled by setting ``config.PICKLE_LOCAL=False``; however this is NOT recommended because anyone on the network can easily mess your server and computer. To access the server from another computer, use port forwarding. Start the server using a local loopback address, like the default ``127.0.0.1``, and use an ssh tunnel on the client to access it::
+
+       $ ssh -L [LOCAL_PORT]:[REMOTE_HOST]:[REMOTE_PORT] user@server
+
+This opens a ``[LOCAL_PORT]`` on the client, that gets forwarded through an ssh connection (``user@server``) to the server ``[REMOTE_HOST]:[REMOTE_PORT]``. For example, to connect to a server running on port ``12345`` on the local loopback ``127.0.0.1``, use the following command  on the client to forward a port::
+
+        $ ssh -L 54321:127.0.0.1:12345 user@server
+        
+This should appear to ssh into the server like normal, but the port is forwarded. As long as this connection is open, the port will be forwarded. To close the port, disconnect the ssh connection. Check to see if it worked by opening another terminal and executing::
+        
+        $ ss -ltn | grep 54321
+        LISTEN 0      128             127.0.0.1:54321      0.0.0.0:*          
+        LISTEN 0      128                 [::1]:54321         [::]:*
+
+Create a proxy on the client like you normally would by connecting to ``host=127.0.0.1``, ``port=54321``. 
 
 Pyro5
 =====
-
-
 
 *Remote objects communication library*
 
@@ -23,8 +42,6 @@ Pyro5
     :target: https://anaconda.org/conda-forge/pyro5
     
 **Project status: super low maintenance mode. Not really worked on anymore, only reported bugs will be looked at.**
-
-`See how easy it is to exploit pickle <https://arjancodes.com/blog/python-pickle-module-security-risks-and-safer-alternatives>`_ 
 
 Info
 ----

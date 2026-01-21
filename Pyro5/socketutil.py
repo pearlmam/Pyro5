@@ -418,7 +418,12 @@ class SocketConnection(object):
         self.pyroInstances = {}    # type: Dict[Type, Any]   # pyro objects for instance_mode=session
         self.tracked_resources = weakref.WeakSet()   # type: weakref.WeakSet[Any]  # weakrefs to resources for this connection
         self.keep_open = keep_open
-
+        self.allow_pickle = False
+        if sock.family in (socket.AF_INET, socket.AF_INET6):
+            peer_ip, _ = sock.getpeername()
+            if ipaddress.ip_address(peer_ip).is_loopback:
+                self.allow_pickle = True
+        
     def __del__(self):
         self.close()
 

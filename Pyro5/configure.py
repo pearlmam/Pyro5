@@ -22,7 +22,7 @@ class Configuration:
         "MAX_MESSAGE_SIZE", "BROADCAST_ADDRS", "PREFER_IP_VERSION", "SERIALIZER", "SERPENT_BYTES_REPR",
         "ITER_STREAMING", "ITER_STREAM_LIFETIME", "ITER_STREAM_LINGER", "LOGFILE", "LOGLEVEL", "LOGWIRE",
         "SSL", "SSL_SERVERCERT", "SSL_SERVERKEY", "SSL_SERVERKEYPASSWD", "SSL_REQUIRECLIENTCERT",
-        "SSL_CLIENTCERT", "SSL_CLIENTKEY", "SSL_CLIENTKEYPASSWD", "SSL_CACERTS"
+        "SSL_CLIENTCERT", "SSL_CLIENTKEY", "SSL_CLIENTKEYPASSWD", "SSL_CACERTS","PICKLE_ENABLE", "PICKLE_LOCAL"
     ]
 
     def __init__(self):
@@ -72,6 +72,8 @@ class Configuration:
         self.SSL_CLIENTKEY = ""
         self.SSL_CLIENTKEYPASSWD = ""
         self.SSL_CACERTS = ""
+        self.PICKLE_ENABLE = False
+        self.PICKLE_LOCAL = True
         if use_environment:
             # environment variables overwrite config items
             prefix = "PYRO_"
